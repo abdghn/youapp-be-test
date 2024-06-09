@@ -1,0 +1,44 @@
+version: '3.8'
+
+services:
+  mongo:
+    image: mongo
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: root
+      MONGO_INITDB_ROOT_PASSWORD: supersafe
+    ports:
+    - 27017:27017
+    networks:
+      - app_network
+
+  rabbitmq3:
+    image: rabbitmq:3-management-alpine
+    environment:
+      - RABBITMQ_DEFAULT_USER=root
+      - RABBITMQ_DEFAULT_PASS=supersafe
+    ports:
+      # AMQP protocol port
+      - '5672:5672'
+      - '15672:15672'
+    networks:
+      - app_network
+  app:
+    build:
+      context: .
+    container_name: youapp-be-test
+    ports:
+      - "3000:3000"
+    environment:
+      MONGODB_URI: "mongodb://root:supersafe@mongo:27017/youapp-test?readPreference=primary&directConnection=true&ssl=false&authSource=admin"
+      RABBITMQ_URI: "amqp://root:supersafe@rabbitmq3:5672"
+      UPLOAD_PATH: "storage"
+      SECRET_KEY: "LTOP@9312"
+    networks:
+      - app_network
+    depends_on:
+      - mongo
+      - rabbitmq3
+networks:
+  app_network:
+    name: app_network
+    driver: bridge
